@@ -1,4 +1,4 @@
-# san
+# analysis of airplane crashes
 this is a package on airplane  crashes that answers these questions
 Analysis of the public dataset: "Airplane Crashes and Fatalities Since 1908" (Full history of airplane crashes throughout the world, from 1908-present) hosted by Open Data by Socrata available at:
 https://opendata.socrata.com/Government/Airplane-Crashes-and-Fatalities-Since-1908/q2te-8cvq
