@@ -1,0 +1,190 @@
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
+
+import numpy as np 
+import pandas as pd 
+from matplotlib import pyplot as plt
+
+
+AirCrashPd = pd.read_csv('airplane.csv',sep=',')
+AirCrashPd['Date']=pd.to_datetime(AirCrashPd['Date']) #from mm/dd/yyyy to yyyy-mm-dd
+AirCrashPd['year']=AirCrashPd['Date'].dt.year
+plt.scatter(AirCrashPd['Aboard'],AirCrashPd['Fatalities'],alpha=0.7,s = 50)
+plt.xlabel('Aboard')
+plt.ylabel('Fatalities')
+AirCrashPd['survivors']=AirCrashPd.Aboard-AirCrashPd.Fatalities
+#print(AirCrashPd.survivors)
+plt.show()
+AirCrashPd['survivors'].plot(kind='hist')
+plt.xlabel('% survivors')
+plt.show()
+
+
+#mean of survivors in each year
+survivors_series=AirCrashPd.groupby(AirCrashPd['Date'].dt.year)['survivors'].sum()
+#print(survivors_series)
+
+survivors_series=pd.Series(survivors_series,index=survivors_series.index)
+survivors_series.dropna().plot()
+plt.ylabel(' survivors')
+plt.show()
+#
+#
+
+Aboard_series=AirCrashPd.groupby(AirCrashPd['Date'].dt.year)['Aboard'].sum()
+Aboard_series=pd.Series(Aboard_series,index=Aboard_series.index)
+Aboard_series.dropna().plot()
+plt.ylabel(' Aboard')
+plt.show()
+Fatalities_series=AirCrashPd.groupby(AirCrashPd['Date'].dt.year)['Fatalities'].sum()
+Fatalities_series=pd.Series(Fatalities_series,index=Fatalities_series.index)
+Fatalities_series.dropna().plot()
+plt.ylabel('Fatalities ')
+plt.show()
+crash_series=AirCrashPd.groupby(AirCrashPd['Date'].dt.year)['Fatalities'].count()
+crash_series=pd.Series(crash_series,index=crash_series.index)
+crash_series.dropna().plot()
+plt.ylabel('crashes ')
+plt.show()
+
+
+survivors_series=pd.Series(survivors_series,index=survivors_series.index)
+survivors_series.dropna().plot()
+plt.ylabel('% survivors')
+plt.show()
+    
+
+##################2#####################################################
+import seaborn as sns
+high_op_series=AirCrashPd.groupby(AirCrashPd['Operator']).count()
+print(high_op_series.sort_values(['Date'],ascending=False).head(1).Date)
+
+
+
+Total_by_Op = AirCrashPd.groupby('Operator')[['Operator']].count()
+Total_by_Op = Total_by_Op.rename(columns={"Operator": "Count"})
+Total_by_Op = Total_by_Op.sort_values(by='Count', ascending=False).head(15);
+
+plt.figure(figsize=(12,6))
+sns.barplot(y=Total_by_Op.index, x="Count", data=Total_by_Op, palette="rocket", orient='h')
+plt.xlabel('Count', fontsize=11)
+plt.ylabel('Operator', fontsize=11)
+plt.title('Total Count by Opeartor', loc='Center', fontsize=14)
+plt.show()
+high_type_series=AirCrashPd.groupby(AirCrashPd['Type']).count()
+print(high_type_series.sort_values(['Date'],ascending=False).head(1).Date)
+
+Total_by_air = AirCrashPd.groupby('Type')[['Type']].count()
+Total_by_air = Total_by_air.rename(columns={"Type": "Count"})
+Total_by_air = Total_by_air.sort_values(by='Count', ascending=False).head(15);
+
+plt.figure(figsize=(12,6))
+sns.barplot(y=Total_by_air.index, x="Count", data=Total_by_air, palette="gist_heat", orient='h')
+plt.xlabel('Count', fontsize=11)
+plt.ylabel('Type of Aircraft', fontsize=11)
+plt.title('Total Count by Aircraft', loc='Center', fontsize=14)
+plt.show()
+
+
+from collections import Counter
+loc_list = Counter(AirCrashPd['Location'].dropna()).most_common(15)
+locs = []
+crashes = []
+for loc in loc_list:
+    locs.append(loc[0])
+    crashes.append(loc[1])
+print('Top 15 the most dangerous locations')
+print(pd.DataFrame({'Crashes in this location' : crashes}, index=locs))
+
+##################################3##########################################
+
+
+
+
+
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics import adjusted_rand_score
+text_data = AirCrashPd['Summary'].dropna()
+text_data = pd.DataFrame(text_data)
+
+#to convert text data to a list, vectorize it and remove any stop words in the data :)
+documents = list(text_data['Summary'])
+vectorizer = TfidfVectorizer(stop_words='english')
+X = vectorizer.fit_transform(documents)
+
+true_k = 7
+model = KMeans(n_clusters=true_k, max_iter=100, n_init=1)
+model.fit(X)
+print ('Most Common Terms per Cluster:')
+order_centroids = model.cluster_centers_.argsort()[:,::-1]
+terms = vectorizer.get_feature_names()
+
+
+for i in range(true_k):
+    print('Cluster %d:' % i)
+    for j in order_centroids[i, :10]:
+        print ('%s' % terms[j]),
+        
+    print('\n')
+
+###################################4#######################
+import re
+import operator
+failures = {
+    'pilot error': '(pilot|crew) (error|fatigue)',
+    'engine failure': 'engine.*(fire|fail)',
+    'structure failure': '(structural fail)|(fuel leak)|(langing gear)',
+    'electrical problem': 'electrical',
+    'poor weather': '((poor|bad).*(weather|visibility)|thunderstorm)',
+    'stall': 'stall',
+    'on fire': '(caught fire)|(caught on fire)',
+    'turbulence': 'turbulence',
+    'fuel exhaustion': '(out of fuel)|(fuel.*exhaust)',
+    'terrorism': 'terrorist|terrorism',
+    'shot down': 'shot downshoot',
+    'mountain':'mountain|mountains|mountainous',}
+failure_counts = {'other':0}
+
+for s in AirCrashPd.Summary.dropna():
+    other = True
+    for failure, exp in failures.items():
+        if re.search(exp, s.lower()):
+            other = False
+            if failure in failure_counts:
+                failure_counts[failure] += 1
+            else:
+                failure_counts[failure] = 1
+    if other:
+        failure_counts['other'] += 1
+
+nan_counts = len(AirCrashPd.Summary.isnull())
+print('causes not available: %d' % nan_counts)
+print('unidentified causes: %d' % failure_counts['other'])
+
+del failure_counts['other']
+
+sortedcauses = sorted(failure_counts.items(), key=operator.itemgetter(1), reverse=True)
+for k, v in sortedcauses:
+    print(k, v)
+
+
+#####################5#########################
+    
+
+
+
+
+from statsmodels.tsa.seasonal import seasonal_decompose
+
+crash_series=AirCrashPd.groupby(AirCrashPd['Date'].dt.year)['Fatalities'].count()
+#series = Series.from_csv('airplane.csv', header=0)
+result = seasonal_decompose(crash_series, model='multiplicative',freq=1)
+#print(result.trend)
+result.trend.plot()
+
