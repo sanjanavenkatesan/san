@@ -1,0 +1,51 @@
+proc sql;
+    /* Month 1 summary */
+    create table month1_summary as
+    select
+        "Month1" as month label="Month",
+        count(distinct m1.member_id) as total_members,
+        sum(case when m1.gapstatus = 'open' then 1 else 0 end) as open_count,
+        sum(case when m1.gapstatus = 'closed' then 1 else 0 end) as closed_count
+    from month1 m1
+    inner join common_members cm on m1.member_id = cm.member_id;
+
+    /* Month 2 summary */
+    create table month2_summary as
+    select
+        "Month2" as month,
+        count(distinct m2.member_id) as total_members,
+        sum(case when m2.gapstatus = 'open' then 1 else 0 end) as open_count,
+        sum(case when m2.gapstatus = 'closed' then 1 else 0 end) as closed_count
+    from month2 m2
+    inner join common_members cm on m2.member_id = cm.member_id;
+
+    /* Month 3 summary */
+    create table month3_summary as
+    select
+        "Month3" as month,
+        count(distinct m3.member_id) as total_members,
+        sum(case when m3.gapstatus = 'open' then 1 else 0 end) as open_count,
+        sum(case when m3.gapstatus = 'closed' then 1 else 0 end) as closed_count
+    from month3 m3
+    inner join common_members cm on m3.member_id = cm.member_id;
+
+    /* Month 4 summary */
+    create table month4_summary as
+    select
+        "Month4" as month,
+        count(distinct m4.member_id) as total_members,
+        sum(case when m4.gapstatus = 'open' then 1 else 0 end) as open_count,
+        sum(case when m4.gapstatus = 'closed' then 1 else 0 end) as closed_count
+    from month4 m4
+    inner join common_members cm on m4.member_id = cm.member_id;
+
+    /* Combine all 4 summaries */
+    create table final_gap_summary as
+    select * from month1_summary
+    union all
+    select * from month2_summary
+    union all
+    select * from month3_summary
+    union all
+    select * from month4_summary;
+quit;
