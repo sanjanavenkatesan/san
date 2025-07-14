@@ -49,3 +49,34 @@ proc sql;
     union all
     select * from month4_summary;
 quit;
+
+
+
+
+
+
+
+
+proc sql;
+    /* Step 1: Create a combined table */
+    create table combined_gaps as
+    select cm.member_id, m1.gapname,
+           m1.gapstatus as status1,
+           m2.gapstatus as status2,
+           m3.gapstatus as status3,
+           m4.gapstatus as status4
+    from common_members cm
+    inner join month1 m1 on cm.member_id = m1.member_id
+    inner join month2 m2 on cm.member_id = m2.member_id and m1.gapname = m2.gapname
+    inner join month3 m3 on cm.member_id = m3.member_id and m1.gapname = m3.gapname
+    inner join month4 m4 on cm.member_id = m4.member_id and m1.gapname = m4.gapname;
+
+    /* Step 2: Count open and closed members across all 4 months */
+    create table gap_status_summary as
+    select 
+        gapname,
+        sum(case when status1 = 'open' and status2 = 'open' and status3 = 'open' and status4 = 'open' then 1 else 0 end) as open_all_4,
+        sum(case when status1 = 'closed' and status2 = 'closed' and status3 = 'closed' and status4 = 'closed' then 1 else 0 end) as closed_all_4
+    from combined_gaps
+    group by gapname;
+quit;
